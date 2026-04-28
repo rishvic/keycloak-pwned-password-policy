@@ -18,7 +18,7 @@ package net.rishvic.keycloak.policy;
 
 import java.io.IOException;
 
-interface BreachedPasswordLookup {
+public interface BreachedPasswordLookup {
   /**
    * Given the SHA-1 hash of a password, returns the number of times the password has been breached.
    * If the password hasn't been breached, returns 0.

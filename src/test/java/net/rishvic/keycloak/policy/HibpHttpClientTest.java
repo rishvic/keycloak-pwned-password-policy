@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class HibpHttpClientTest {
+public class HibpHttpClientTest {
   @Test
   public void parseResponseBody_generatesValidMap() {
     String responseBody =

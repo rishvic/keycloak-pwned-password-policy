@@ -23,7 +23,7 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.policy.PasswordPolicyProvider;
 import org.keycloak.policy.PasswordPolicyProviderFactory;
 
-class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
+public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
   public static final String ID = "pwnedPassword";
 

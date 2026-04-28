@@ -28,7 +28,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.policy.PasswordPolicyProvider;
 import org.keycloak.policy.PolicyError;
 
-class PwnedPasswordPolicyProvider implements PasswordPolicyProvider {
+public class PwnedPasswordPolicyProvider implements PasswordPolicyProvider {
 
   private static final Logger logger = Logger.getLogger(PwnedPasswordPolicyProvider.class);
   private static final String ERROR_MESSAGE = "invalidPasswordPwnedPasswordBreachedMessage";

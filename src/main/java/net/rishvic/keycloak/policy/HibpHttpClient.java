@@ -25,7 +25,7 @@ import org.keycloak.http.simple.SimpleHttp;
 import org.keycloak.http.simple.SimpleHttpResponse;
 import org.keycloak.models.KeycloakSession;
 
-class HibpHttpClient implements BreachedPasswordLookup {
+public class HibpHttpClient implements BreachedPasswordLookup {
 
   private static final String BASE_URL = "https://api.pwnedpasswords.com/range/";
   private final KeycloakSession session;

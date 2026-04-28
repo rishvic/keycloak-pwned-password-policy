@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-class PwnedPasswordPolicyProviderTest {
+public class PwnedPasswordPolicyProviderTest {
 
   private static final String BREACHED_PASSWORD = "password";
   private static final String BREACHED_PASSWORD_SHA1 = "5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8";
