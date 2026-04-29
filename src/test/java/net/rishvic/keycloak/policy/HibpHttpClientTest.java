@@ -27,10 +27,10 @@ public class HibpHttpClientTest {
   public void parseResponseBody_generatesValidMap() {
     String responseBody =
         """
-        0018A45C4D1DEF81644B54AB7F969B88D65:1
-        00D4F6E8FA6EECAD2A3AA415EEC418D38EC:2
-        011053FD0102E94D6AE2F8B83D76FAF94F6:1
-        012A7CA357541F0AC487871FEEC1891C49C:2
+        0018A45C4D1DEF81644B54AB7F969B88D65:1\r
+        00D4F6E8FA6EECAD2A3AA415EEC418D38EC:2\r
+        011053FD0102E94D6AE2F8B83D76FAF94F6:1\r
+        012A7CA357541F0AC487871FEEC1891C49C:2\r
         0136E006E24E7D152139815FB0FC6A50B15:2\
         """;
     Map<String, Integer> expectedMap =
@@ -50,10 +50,10 @@ public class HibpHttpClientTest {
   public void parseResponseBody_removePaddedEntries() {
     String responseBody =
         """
-        0018A45C4D1DEF81644B54AB7F969B88D65:1
-        00D4F6E8FA6EECAD2A3AA415EEC418D38EC:0
-        011053FD0102E94D6AE2F8B83D76FAF94F6:0
-        012A7CA357541F0AC487871FEEC1891C49C:0
+        0018A45C4D1DEF81644B54AB7F969B88D65:1\r
+        00D4F6E8FA6EECAD2A3AA415EEC418D38EC:0\r
+        011053FD0102E94D6AE2F8B83D76FAF94F6:0\r
+        012A7CA357541F0AC487871FEEC1891C49C:0\r
         0136E006E24E7D152139815FB0FC6A50B15:2\
         """;
     Map<String, Integer> expectedMap =
@@ -70,8 +70,8 @@ public class HibpHttpClientTest {
   public void parseResponseBody_skipInvalidEntries() {
     String responseBody =
         """
-        0018A45C4D1DEF81644B54AB7F969B88D65:1
-        invalidentry
+        0018A45C4D1DEF81644B54AB7F969B88D65:1\r
+        invalidentry\r
         0136E006E24E7D152139815FB0FC6A50B15:2\
         """;
     Map<String, Integer> expectedMap =
@@ -88,8 +88,8 @@ public class HibpHttpClientTest {
   public void parseResponseBody_skipNonNumericCount() {
     String responseBody =
         """
-        0018A45C4D1DEF81644B54AB7F969B88D65:1
-        011053FD0102E94D6AE2F8B83D76FAF94F6:invalidcount
+        0018A45C4D1DEF81644B54AB7F969B88D65:1\r
+        011053FD0102E94D6AE2F8B83D76FAF94F6:invalidcount\r
         0136E006E24E7D152139815FB0FC6A50B15:2\
         """;
     Map<String, Integer> expectedMap =

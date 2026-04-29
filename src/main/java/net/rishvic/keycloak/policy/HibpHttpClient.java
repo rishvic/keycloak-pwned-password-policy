@@ -17,7 +17,6 @@
 package net.rishvic.keycloak.policy;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,7 +49,7 @@ public class HibpHttpClient implements BreachedPasswordLookup {
   }
 
   static Map<String, Integer> parseResponseBody(String body) {
-    return Arrays.stream(body.split("\\n"))
+    return body.lines()
         .map(
             (line) -> {
               try {
