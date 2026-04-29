@@ -83,9 +83,6 @@ fabric.properties
 
 .idea/*
 
-!.idea/codeStyles
-!.idea/runConfigurations
-
 ### Java ###
 # Compiled class file
 *.class
@@ -154,11 +151,6 @@ tags
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
 
 # Local History for Visual Studio Code
 .history/
@@ -326,9 +318,6 @@ fabric.properties
 
 .idea/*
 
-!.idea/codeStyles
-!.idea/runConfigurations
-
 ### Java ###
 # Compiled class file
 *.class
@@ -413,3 +402,6 @@ tags
 # Ignore all local history of files
 .history
 .ionide
+
+# .git/ root directory
+.git/

@@ -37,7 +37,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <version.org.keycloak>26.6.1</version.org.keycloak>
+    <keycloak.version>26.6.1</keycloak.version>
   </properties>
 
   <dependencyManagement>
@@ -52,7 +52,7 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-parent</artifactId>
-        <version>26.6.1</version>
+        <version>${keycloak.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

@@ -15,7 +15,7 @@ list. When a user sets or changes a password, the policy:
 1. Computes the SHA-1 of the password locally.
 2. Sends the first 5 hex characters to
    `https://api.pwnedpasswords.com/range/{prefix}`.
-3. Receives ~500–1000 hash suffixes that share the prefix, with their breach
+3. Receives ~500-1000 hash suffixes that share the prefix, with their breach
    counts.
 4. Looks up the password's own suffix locally and compares the count to the
    realm-configured threshold.
@@ -62,6 +62,13 @@ cp target/keycloak-pwned-password-policy-*.jar "$KC_HOME/providers/"
 Restart Keycloak. The SPI auto-discovers via
 `META-INF/services/org.keycloak.policy.PasswordPolicyProviderFactory`.
 
+### Docker (sample)
+
+A reference `Dockerfile` and Compose file live in [`docker/`](docker/) - they
+build the JAR and produce a Keycloak image with the policy preloaded. See
+[`docker/README.md`](docker/README.md) for usage. Samples only; not a
+production-ready image.
+
 Pre-built artifacts will be published on the project's Codeberg releases page
 (when available) and/or Maven Central.
 
@@ -71,8 +78,8 @@ Pre-built artifacts will be published on the project's Codeberg releases page
 2. Navigate to **Authentication -> Policies -> Password Policy**.
 3. Click **Add policy** and choose **Pwned Passwords**.
 4. Set the integer threshold:
-   - `1` (default) — reject any password ever recorded in a breach.
-   - `N > 1` — allow passwords whose breach count is strictly less than `N`.
+   - `1` (default) - reject any password ever recorded in a breach.
+   - `N > 1` - allow passwords whose breach count is strictly less than `N`.
      Useful for phased rollouts where you want to block the worst offenders
      without locking out users on mildly common passwords.
 
@@ -97,7 +104,7 @@ invalidPasswordPwnedNoSuchAlgorithmMessage=Password could not be checked against
 
 ## Privacy & security notes
 
-- Full SHA-1 hash and full password never leave Keycloak — only the 5-char
+- Full SHA-1 hash and full password never leave Keycloak - only the 5-char
   prefix is sent.
 - The HIBP server cannot determine which exact password was checked.
 - The `Add-Padding: true` header mitigates response-size correlation attacks
@@ -119,7 +126,7 @@ Java 21 toolchain is required.
 
 ```
 src/main/java/net/rishvic/keycloak/policy/
-  BreachedPasswordLookup.java              # interface: SHA-1 hash → breach count
+  BreachedPasswordLookup.java              # interface: SHA-1 hash -> breach count
   HibpHttpClient.java                      # HIBP impl + static response parser
   PwnedPasswordPolicyProvider.java         # hash + threshold-compare logic
   PwnedPasswordPolicyProviderFactory.java  # Keycloak SPI factory wiring
@@ -134,7 +141,7 @@ src/test/java/...                          # JUnit 5 + AssertJ unit tests
 - Fails open on network errors. Operators who require fail-closed semantics will
   need a future config flag.
 - HIBP rate limits are not handled explicitly. The range API has no documented
-  rate limit at time of writing — verify current HIBP terms before high-volume
+  rate limit at time of writing - verify current HIBP terms before high-volume
   deployments.
 
 ## Roadmap

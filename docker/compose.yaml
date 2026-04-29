@@ -1,0 +1,16 @@
+name: keycloak-pwned
+
+services:
+  keycloak:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        KEYCLOAK_VERSION: "26.6.1"
+    restart: unless-stopped
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    command: ["start-dev"]
