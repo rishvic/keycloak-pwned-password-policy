@@ -41,7 +41,7 @@ seen in a breach).
 ## Requirements
 
 - Keycloak **26.6.1** or compatible
-- JDK **25** to build (the deployed JAR runs on Keycloak's bundled JDK)
+- JDK **21** to build (the deployed JAR runs on Keycloak's bundled JDK)
 - Outbound HTTPS access from Keycloak to `api.pwnedpasswords.com`
 
 ## Installation
@@ -113,7 +113,7 @@ mvn test                    # unit tests
 mvn org.pitest:pitest-maven:mutationCoverage   # mutation report in target/pit-reports/
 ```
 
-Java 25 toolchain is required.
+Java 21 toolchain is required.
 
 ## Project layout
 
