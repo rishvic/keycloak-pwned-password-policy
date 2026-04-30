@@ -34,7 +34,7 @@ public class PwnedPasswordPolicyProviderTest {
   @Test
   public void validate_rejectsBreachedPassword() {
     PwnedPasswordPolicyProvider provider =
-        new PwnedPasswordPolicyProvider(() -> 5, new FakeLookup());
+        new PwnedPasswordPolicyProvider(() -> 5, () -> true, new FakeLookup());
     String user = "user";
     String password = BREACHED_PASSWORD;
 
@@ -44,7 +44,7 @@ public class PwnedPasswordPolicyProviderTest {
   @Test
   public void validate_allowsUnbreachedPassword() {
     PwnedPasswordPolicyProvider provider =
-        new PwnedPasswordPolicyProvider(() -> 5, new FakeLookup());
+        new PwnedPasswordPolicyProvider(() -> 5, () -> true, new FakeLookup());
     String user = "user";
     String password = "securepassword";
 
@@ -54,7 +54,7 @@ public class PwnedPasswordPolicyProviderTest {
   @Test
   public void validate_allowsLessBreachedPassword() {
     PwnedPasswordPolicyProvider provider =
-        new PwnedPasswordPolicyProvider(() -> 5, new FakeLookup());
+        new PwnedPasswordPolicyProvider(() -> 5, () -> true, new FakeLookup());
     String user = "user";
     String password = LESS_BREACHED_PASSWORD;
 
@@ -64,7 +64,7 @@ public class PwnedPasswordPolicyProviderTest {
   @Test
   public void validate_rejectsThresholdBreachedPassword() {
     PwnedPasswordPolicyProvider provider =
-        new PwnedPasswordPolicyProvider(() -> 2, new FakeLookup());
+        new PwnedPasswordPolicyProvider(() -> 2, () -> true, new FakeLookup());
     String user = "user";
     String password = LESS_BREACHED_PASSWORD;
 
@@ -72,13 +72,25 @@ public class PwnedPasswordPolicyProviderTest {
   }
 
   @Test
-  public void validate_allowsLookupFailure() {
+  public void validate_failOpen_allowsLookupFailure() {
     PwnedPasswordPolicyProvider provider =
-        new PwnedPasswordPolicyProvider(() -> 5, new FakeLookup(new IOException("test exception")));
+        new PwnedPasswordPolicyProvider(
+            () -> 5, () -> true, new FakeLookup(new IOException("test exception")));
     String user = "user";
     String password = BREACHED_PASSWORD;
 
     assertNull(provider.validate(user, password));
+  }
+
+  @Test
+  public void validate_failClosed_rejectsLookupFailure() {
+    PwnedPasswordPolicyProvider provider =
+        new PwnedPasswordPolicyProvider(
+            () -> 5, () -> false, new FakeLookup(new IOException("test exception")));
+    String user = "user";
+    String password = BREACHED_PASSWORD;
+
+    assertNotNull(provider.validate(user, password));
   }
 
   private static class FakeLookup implements BreachedPasswordLookup {

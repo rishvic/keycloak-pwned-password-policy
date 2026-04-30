@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import org.jboss.logging.Logger;
 import org.keycloak.models.RealmModel;
@@ -34,12 +35,19 @@ public class PwnedPasswordPolicyProvider implements PasswordPolicyProvider {
   private static final String ERROR_MESSAGE = "invalidPasswordPwnedPasswordBreachedMessage";
   private static final String ERROR_MESSAGE_NO_SHA1_ALGO =
       "invalidPasswordPwnedNoSuchAlgorithmMessage";
+  private static final String ERROR_MESSAGE_LOOKUP_UNAVAILABLE =
+      "invalidPasswordPwnedPasswordLookupUnavailableMessage";
 
   private final IntSupplier thresholdSupplier;
+  private final BooleanSupplier failOpenSupplier;
   private final BreachedPasswordLookup lookup;
 
-  public PwnedPasswordPolicyProvider(IntSupplier thresholdSupplier, BreachedPasswordLookup lookup) {
+  public PwnedPasswordPolicyProvider(
+      IntSupplier thresholdSupplier,
+      BooleanSupplier failOpenSupplier,
+      BreachedPasswordLookup lookup) {
     this.thresholdSupplier = thresholdSupplier;
+    this.failOpenSupplier = failOpenSupplier;
     this.lookup = lookup;
   }
 
@@ -56,9 +64,13 @@ public class PwnedPasswordPolicyProvider implements PasswordPolicyProvider {
       int count = lookup.getBreachCount(passwordDigest);
       return count >= breachThreshold ? new PolicyError(ERROR_MESSAGE, breachThreshold) : null;
     } catch (IOException e) {
-      // Fail-open; allow password to be used if cannot reach 3rd party API
-      logger.warnf("Could not reach Have I Been Pwned API: %s", e.getMessage());
-      return null;
+      boolean failOpen = failOpenSupplier.getAsBoolean();
+      logger.logf(
+          failOpen ? Logger.Level.WARN : Logger.Level.ERROR,
+          "Could not reach Have I Been Pwned API, failOpen=%b: %s",
+          failOpen,
+          e.getMessage());
+      return failOpen ? null : new PolicyError(ERROR_MESSAGE_LOOKUP_UNAVAILABLE);
     } catch (NoSuchAlgorithmException e) {
       logger.errorf("SHA-1 digest algorithm not found: %s", e.getMessage());
       return new PolicyError(ERROR_MESSAGE_NO_SHA1_ALGO);

@@ -16,16 +16,24 @@
 
 package net.rishvic.keycloak.policy;
 
+import java.util.List;
 import java.util.function.IntSupplier;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.policy.PasswordPolicyProvider;
 import org.keycloak.policy.PasswordPolicyProviderFactory;
+import org.keycloak.provider.ProviderConfigProperty;
+import org.keycloak.provider.ProviderConfigurationBuilder;
 
 public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProviderFactory {
 
   public static final String ID = "pwnedPassword";
+
+  public static final String FAIL_OPEN_PROPERTY = "failOpen";
+  public static final boolean DEFAULT_FAIL_OPEN = true;
+
+  private volatile Config.Scope config;
 
   @Override
   public String getId() {
@@ -36,11 +44,14 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
   public PasswordPolicyProvider create(KeycloakSession session) {
     IntSupplier thresholdSupplier =
         () -> session.getContext().getRealm().getPasswordPolicy().getPolicyConfig(ID);
-    return new PwnedPasswordPolicyProvider(thresholdSupplier, new HibpHttpClient(session));
+    return new PwnedPasswordPolicyProvider(
+        thresholdSupplier, this::getFailOpen, new HibpHttpClient(session));
   }
 
   @Override
-  public void init(Config.Scope config) {}
+  public void init(Config.Scope config) {
+    this.config = config;
+  }
 
   @Override
   public void postInit(KeycloakSessionFactory factory) {}
@@ -67,4 +78,27 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
 
   @Override
   public void close() {}
+
+  @Override
+  public List<ProviderConfigProperty> getConfigMetadata() {
+    ProviderConfigurationBuilder builder = ProviderConfigurationBuilder.create();
+
+    builder
+        .property()
+        .name(FAIL_OPEN_PROPERTY)
+        .type(ProviderConfigProperty.BOOLEAN_TYPE)
+        .helpText(
+            "If true (default), allow password when HIBP API is unreachable. If false, reject the"
+                + " password.")
+        .defaultValue(DEFAULT_FAIL_OPEN)
+        .add();
+
+    return builder.build();
+  }
+
+  private boolean getFailOpen() {
+    return config == null
+        ? DEFAULT_FAIL_OPEN
+        : config.getBoolean(FAIL_OPEN_PROPERTY, DEFAULT_FAIL_OPEN);
+  }
 }

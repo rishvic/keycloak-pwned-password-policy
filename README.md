@@ -32,9 +32,12 @@ seen in a breach).
   cannot identify which password was checked.
 - **Padding header:** requests include `Add-Padding: true` so the response size
   does not leak how many breach records actually matched.
-- **Fail-open:** if the HIBP API is unreachable (network error, timeout, non-200
-  status), the policy logs a warning and allows the password. Rationale: an
-  upstream outage must not block all password changes.
+- **Configurable fail-open / fail-closed:** if the HIBP API is unreachable
+  (network error, timeout, non-200 status), the policy by default logs a warning
+  and **allows** the password - an upstream outage must not block all password
+  changes. Operators with strict compliance needs can flip the policy to
+  **fail-closed** (reject the password and surface a distinct error) by setting
+  the `failOpen` SPI property to `false`. See **Configuration** below.
 - **Fail-closed on missing SHA-1:** the JVM is required to provide SHA-1; the
   unlikely absence is reported as a policy error rather than silently allowed.
 
@@ -85,20 +88,48 @@ Pre-built artifacts will be published on the project's Codeberg releases page
 
 Only one instance of this policy is supported per realm.
 
+### Server-wide fail-mode (`failOpen`)
+
+The fail-mode on HIBP API failure is configured at the SPI level (server-wide,
+not per realm). Default is `true` (fail-open).
+
+| Property   | Type    | Default | Effect                                                                     |
+| ---------- | ------- | ------- | -------------------------------------------------------------------------- |
+| `failOpen` | boolean | `true`  | If `true`, allow password when HIBP is unreachable. If `false`, reject it. |
+
+Set it via Keycloak CLI:
+
+```sh
+"$KC_HOME/bin/kc.sh" start \
+    --spi-password-policy-pwned-password-fail-open=false
+```
+
+Or in `keycloak.conf`:
+
+```properties
+spi-password-policy-pwned-password-fail-open=false
+```
+
+When `failOpen=false` and the API is unreachable, the policy returns the
+`invalidPasswordPwnedPasswordLookupUnavailableMessage` error key (see the i18n
+table below).
+
 ## Custom error messages (i18n)
 
 Override these message keys in your Keycloak theme's
 `messages_<locale>.properties`:
 
-| Key                                           | When it fires                                                  | Format args       |
-| --------------------------------------------- | -------------------------------------------------------------- | ----------------- |
-| `invalidPasswordPwnedPasswordBreachedMessage` | Password's breach count meets or exceeds the threshold.        | `{0}` = threshold |
-| `invalidPasswordPwnedNoSuchAlgorithmMessage`  | JVM does not provide SHA-1 (effectively never on a stock JDK). | none              |
+| Key                                                    | When it fires                                                  | Format args       |
+| ------------------------------------------------------ | -------------------------------------------------------------- | ----------------- |
+| `invalidPasswordPwnedPasswordBreachedMessage`          | Password's breach count meets or exceeds the threshold.        | `{0}` = threshold |
+| `invalidPasswordPwnedPasswordLookupUnavailableMessage` | HIBP API unreachable AND `failOpen=false`. Password rejected.  | none              |
+| `invalidPasswordPwnedNoSuchAlgorithmMessage`           | JVM does not provide SHA-1 (effectively never on a stock JDK). | none              |
 
 Example English defaults you might supply:
 
 ```properties
 invalidPasswordPwnedPasswordBreachedMessage=This password has appeared in {0} or more known data breaches. Please choose a different one.
+invalidPasswordPwnedPasswordLookupUnavailableMessage=The breach database is currently unavailable; this password could not be checked. Please try again later.
 invalidPasswordPwnedNoSuchAlgorithmMessage=Password could not be checked against the breach database. Contact your administrator.
 ```
 
@@ -138,8 +169,6 @@ src/test/java/...                          # JUnit 5 + AssertJ unit tests
 
 - Each password validation makes one HTTPS round-trip to HIBP. There is no cache
   yet; planned.
-- Fails open on network errors. Operators who require fail-closed semantics will
-  need a future config flag.
 - HIBP rate limits are not handled explicitly. The range API has no documented
   rate limit at time of writing - verify current HIBP terms before high-volume
   deployments.
@@ -147,7 +176,6 @@ src/test/java/...                          # JUnit 5 + AssertJ unit tests
 ## Roadmap
 
 - Prefix-keyed cache to cut redundant HTTP calls.
-- Configurable fail-open vs fail-closed behavior.
 
 ## Contributing
 
