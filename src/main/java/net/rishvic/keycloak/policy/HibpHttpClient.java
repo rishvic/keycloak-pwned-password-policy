@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.keycloak.http.simple.SimpleHttp;
 import org.keycloak.http.simple.SimpleHttpResponse;
@@ -38,8 +39,16 @@ public class HibpHttpClient implements BreachedPasswordLookup {
 
   @Override
   public int getBreachCount(String sha1Hash) throws IOException {
+    RequestConfig requestConfig =
+        RequestConfig.custom()
+            .setConnectTimeout(3000)
+            .setConnectionRequestTimeout(3000)
+            .setSocketTimeout(5000)
+            .build();
+
     SimpleHttpResponse response =
         SimpleHttp.create(session)
+            .withRequestConfig(requestConfig)
             .doGet(BASE_URL + sha1Hash.substring(0, 5))
             .header("Accept", "*/*")
             .header("Add-Padding", "true")
@@ -50,6 +59,7 @@ public class HibpHttpClient implements BreachedPasswordLookup {
       throw new HttpResponseException(
           statusCode, reasonPhrase == null ? "Unknown Status Code" : reasonPhrase);
     }
+
     Map<String, Integer> breaches = parseResponseBody(response.asString());
     return breaches.getOrDefault(sha1Hash.substring(5), 0);
   }
