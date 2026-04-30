@@ -30,7 +30,7 @@
 
   <scm>
     <connection>scm:git:git://codeberg.org/rishvic/keycloak-pwned-password-policy.git</connection>
-    <developerConnection>scm:git:ssh://codeberg.org:rishvic/keycloak-pwned-password-policy.git</developerConnection>
+    <developerConnection>scm:git:ssh://git@codeberg.org/rishvic/keycloak-pwned-password-policy.git</developerConnection>
     <url>https://codeberg.org/rishvic/keycloak-pwned-password-policy/src/branch/main</url>
   </scm>
 
