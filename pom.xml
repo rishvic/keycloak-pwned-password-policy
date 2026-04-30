@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>net.rishvic.keycloak</groupId>
   <artifactId>keycloak-pwned-password-policy</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <name>Keycloak: Have I Been Pwned Password Policy Extension</name>
   <description>Have I Been Pwned password policy SPI implementation for Keycloak</description>
@@ -32,6 +30,7 @@
     <connection>scm:git:git://codeberg.org/rishvic/keycloak-pwned-password-policy.git</connection>
     <developerConnection>scm:git:ssh://git@codeberg.org/rishvic/keycloak-pwned-password-policy.git</developerConnection>
     <url>https://codeberg.org/rishvic/keycloak-pwned-password-policy/src/branch/main</url>
+    <tag>v1.0.0</tag>
   </scm>
 
   <properties>
