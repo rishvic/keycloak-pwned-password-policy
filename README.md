@@ -49,7 +49,7 @@ seen in a breach).
 Build the JAR:
 
 ```sh
-mvn clean package
+./mvnw clean package
 ```
 
 Drop it into your Keycloak `providers/` directory and rebuild:
@@ -115,9 +115,9 @@ invalidPasswordPwnedNoSuchAlgorithmMessage=Password could not be checked against
 ## Build from source
 
 ```sh
-mvn clean package           # JAR in target/
-mvn test                    # unit tests
-mvn org.pitest:pitest-maven:mutationCoverage   # mutation report in target/pit-reports/
+./mvnw clean package           # JAR in target/
+./mvnw test                    # unit tests
+./mvnw org.pitest:pitest-maven:mutationCoverage   # mutation report in target/pit-reports/
 ```
 
 Java 21 toolchain is required.
@@ -151,7 +151,7 @@ src/test/java/...                          # JUnit 5 + AssertJ unit tests
 
 ## Contributing
 
-Issues and pull requests are welcome on Codeberg. Run `mvn test` before
+Issues and pull requests are welcome on Codeberg. Run `./mvnw test` before
 submitting. By contributing you agree to license your work under Apache License
 2.0; see `LICENSE` and `NOTICE`.
 
