@@ -33,6 +33,9 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
   public static final String FAIL_OPEN_PROPERTY = "failOpen";
   public static final boolean DEFAULT_FAIL_OPEN = true;
 
+  public static final String LOOKUP_TIMEOUT_PROPERTY = "lookupTimeoutMillis";
+  public static final long DEFAULT_LOOKUP_TIMEOUT = 3000L;
+
   private volatile Config.Scope config;
 
   @Override
@@ -45,7 +48,7 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
     IntSupplier thresholdSupplier =
         () -> session.getContext().getRealm().getPasswordPolicy().getPolicyConfig(ID);
     return new PwnedPasswordPolicyProvider(
-        thresholdSupplier, this::getFailOpen, new HibpHttpClient(session));
+        thresholdSupplier, this::getFailOpen, new HibpHttpClient(session, getLookupTimeout()));
   }
 
   @Override
@@ -93,6 +96,17 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
         .defaultValue(DEFAULT_FAIL_OPEN)
         .add();
 
+    builder
+        .property()
+        .name(LOOKUP_TIMEOUT_PROPERTY)
+        .type(ProviderConfigProperty.INTEGER_TYPE)
+        .helpText(
+            "Total time budget in milliseconds for a single HIBP lookup, including any retries the"
+                + " shared HTTP client performs. On expiry the request is aborted and the failOpen"
+                + " policy decides.")
+        .defaultValue(DEFAULT_LOOKUP_TIMEOUT)
+        .add();
+
     return builder.build();
   }
 
@@ -100,5 +114,13 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
     return config == null
         ? DEFAULT_FAIL_OPEN
         : config.getBoolean(FAIL_OPEN_PROPERTY, DEFAULT_FAIL_OPEN);
+  }
+
+  private long getLookupTimeout() {
+    long configured =
+        config == null
+            ? DEFAULT_LOOKUP_TIMEOUT
+            : config.getLong(LOOKUP_TIMEOUT_PROPERTY, DEFAULT_LOOKUP_TIMEOUT);
+    return configured > 0 ? configured : DEFAULT_LOOKUP_TIMEOUT;
   }
 }

@@ -20,12 +20,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.OptionalInt;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -34,12 +40,13 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
 import org.keycloak.connections.httpclient.HttpClientProvider;
 import org.keycloak.connections.httpclient.SafeInputStream;
+import org.keycloak.executors.ExecutorsProvider;
 import org.keycloak.models.KeycloakSession;
 
 public class HibpHttpClient implements BreachedPasswordLookup {
@@ -47,27 +54,42 @@ public class HibpHttpClient implements BreachedPasswordLookup {
   private static final String BASE_URL = "https://api.pwnedpasswords.com/range/";
   private final HttpClient httpClient;
   private final long maxConsumedResponseSize;
+  private final ExecutorService executor;
+  private final long lookupTimeoutMillis;
 
-  public HibpHttpClient(KeycloakSession session) {
+  public HibpHttpClient(KeycloakSession session, long lookupTimeoutMillis) {
     HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
     this.httpClient = provider.getHttpClient();
     this.maxConsumedResponseSize = provider.getMaxConsumedResponseSize();
+    this.executor = session.getProvider(ExecutorsProvider.class).getExecutor("hibp-lookup");
+    this.lookupTimeoutMillis = lookupTimeoutMillis;
   }
 
   @Override
   public int getBreachCount(String sha1Hash) throws IOException {
-    RequestConfig requestConfig =
-        RequestConfig.custom()
-            .setConnectTimeout(3000)
-            .setConnectionRequestTimeout(3000)
-            .setSocketTimeout(5000)
-            .build();
-
     HttpGet request = new HttpGet(BASE_URL + sha1Hash.substring(0, 5));
     request.setHeader("Accept", "*/*");
     request.setHeader("Add-Padding", "true");
-    request.setConfig(requestConfig);
 
+    Future<Integer> future = executor.submit(() -> executeAndCount(request, sha1Hash.substring(5)));
+    try {
+      return future.get(lookupTimeoutMillis, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      request.abort();
+      future.cancel(true);
+      throw new InterruptedIOException(
+          "HIBP lookup exceeded its budget of " + lookupTimeoutMillis + " ms");
+    } catch (InterruptedException e) {
+      request.abort();
+      future.cancel(true);
+      Thread.currentThread().interrupt();
+      throw new InterruptedIOException("Interrupted while awaiting HIBP lookup");
+    } catch (ExecutionException e) {
+      throw unwrap(e.getCause());
+    }
+  }
+
+  private int executeAndCount(HttpUriRequest request, String hashSuffix) throws IOException {
     HttpResponse response = httpClient.execute(request);
 
     StatusLine statusLine = response.getStatusLine();
@@ -93,7 +115,7 @@ public class HibpHttpClient implements BreachedPasswordLookup {
 
     try (InputStream inputStream = entity.getContent()) {
       SafeInputStream safeInputStream = new SafeInputStream(inputStream, maxConsumedResponseSize);
-      return pwnedCount(new InputStreamReader(safeInputStream, charset), sha1Hash.substring(5));
+      return pwnedCount(new InputStreamReader(safeInputStream, charset), hashSuffix);
     }
   }
 
@@ -130,5 +152,18 @@ public class HibpHttpClient implements BreachedPasswordLookup {
     } catch (NumberFormatException e) {
       return OptionalInt.empty();
     }
+  }
+
+  private static IOException unwrap(Throwable cause) {
+    if (cause instanceof IOException ioerr) {
+      return ioerr;
+    }
+    if (cause instanceof RuntimeException rterr) {
+      throw rterr;
+    }
+    if (cause instanceof Error err) {
+      throw err;
+    }
+    return new IOException("HIBP lookup failed", cause);
   }
 }

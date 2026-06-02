@@ -88,31 +88,51 @@ Pre-built artifacts will be published on the project's Codeberg releases page
 
 Only one instance of this policy is supported per realm.
 
-### Server-wide fail-mode (`failOpen`)
+### Server-wide SPI configuration
 
-The fail-mode on HIBP API failure is configured at the SPI level (server-wide,
-not per realm). Default is `true` (fail-open).
+Both settings below are configured at the SPI level (server-wide, not per
+realm).
 
-| Property   | Type    | Default | Effect                                                                     |
-| ---------- | ------- | ------- | -------------------------------------------------------------------------- |
-| `failOpen` | boolean | `true`  | If `true`, allow password when HIBP is unreachable. If `false`, reject it. |
+| Property              | Type    | Default | Effect                                                                                                                                                 |
+| --------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `failOpen`            | boolean | `true`  | If `true`, allow the password when the HIBP lookup fails. If `false`, reject it.                                                                       |
+| `lookupTimeoutMillis` | integer | `3000`  | Total time budget for a single HIBP lookup. On expiry the in-flight request is aborted and the lookup is treated as a failure (handled by `failOpen`). |
 
-Set it via Keycloak CLI:
+Set them via the Keycloak CLI:
 
 ```sh
 "$KC_HOME/bin/kc.sh" start \
-    --spi-password-policy-pwned-password-fail-open=false
+    --spi-password-policy-pwned-password-fail-open=false \
+    --spi-password-policy-pwned-password-lookup-timeout-millis=3000
 ```
 
 Or in `keycloak.conf`:
 
 ```properties
 spi-password-policy-pwned-password-fail-open=false
+spi-password-policy-pwned-password-lookup-timeout-millis=3000
 ```
 
-When `failOpen=false` and the API is unreachable, the policy returns the
+When `failOpen=false` and the lookup fails (unreachable, non-200 status, or the
+time budget is exceeded), the policy returns the
 `invalidPasswordPwnedPasswordLookupUnavailableMessage` error key (see the i18n
 table below).
+
+#### Why the timeout is a _total_ budget
+
+The lookup is made through Keycloak's shared outbound HTTP client. That client
+may retry failed requests, and its retry policy is owned by the server/operator
+at the _client_ level. This plugin cannot override it per request. A per-attempt
+socket timeout therefore does **not** bound the wall-clock time of a lookup: the
+worst case is multiplied by the number of retries (and by the number of resolved
+IP addresses tried per attempt), which on a black-holed network can stretch a
+single password change into tens of seconds.
+
+`lookupTimeoutMillis` is enforced by the plugin itself as a hard ceiling on the
+_entire_ lookup. When it elapses the in-flight request is aborted, which also
+stops any further retries, and the failure is handled by `failOpen`. This keeps
+password changes responsive regardless of how the shared client's retries and
+timeouts happen to be configured.
 
 ## Custom error messages (i18n)
 
@@ -136,11 +156,11 @@ To override any of them, define the same key in your own Keycloak theme's
 `messages_<locale>.properties`. A theme-level entry takes precedence over the
 plugin's bundled default.
 
-| Key                                                    | When it fires                                                  | Format args       |
-| ------------------------------------------------------ | -------------------------------------------------------------- | ----------------- |
-| `invalidPasswordPwnedPasswordBreachedMessage`          | Password's breach count meets or exceeds the threshold.        | `{0}` = threshold |
-| `invalidPasswordPwnedPasswordLookupUnavailableMessage` | HIBP API unreachable AND `failOpen=false`. Password rejected.  | none              |
-| `invalidPasswordPwnedNoSuchAlgorithmMessage`           | JVM does not provide SHA-1 (effectively never on a stock JDK). | none              |
+| Key                                                    | When it fires                                                                                 | Format args       |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------- |
+| `invalidPasswordPwnedPasswordBreachedMessage`          | Password's breach count meets or exceeds the threshold.                                       | `{0}` = threshold |
+| `invalidPasswordPwnedPasswordLookupUnavailableMessage` | HIBP lookup fails (unreachable, non-200, or timeout) AND `failOpen=false`. Password rejected. | none              |
+| `invalidPasswordPwnedNoSuchAlgorithmMessage`           | JVM does not provide SHA-1 (effectively never on a stock JDK).                                | none              |
 
 The bundled default for `invalidPasswordPwnedPasswordBreachedMessage` does not
 use `{0}`, but the threshold is still passed as a format argument, so an
