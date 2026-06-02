@@ -16,25 +16,42 @@
 
 package net.rishvic.keycloak.policy;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
+import java.util.OptionalInt;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.ParseException;
+import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.EnglishReasonPhraseCatalog;
-import org.keycloak.http.simple.SimpleHttp;
-import org.keycloak.http.simple.SimpleHttpResponse;
+import org.keycloak.connections.httpclient.HttpClientProvider;
+import org.keycloak.connections.httpclient.SafeInputStream;
 import org.keycloak.models.KeycloakSession;
 
 public class HibpHttpClient implements BreachedPasswordLookup {
 
   private static final String BASE_URL = "https://api.pwnedpasswords.com/range/";
-  private final KeycloakSession session;
+  private final HttpClient httpClient;
+  private final long maxConsumedResponseSize;
 
   public HibpHttpClient(KeycloakSession session) {
-    this.session = session;
+    HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
+    this.httpClient = provider.getHttpClient();
+    this.maxConsumedResponseSize = provider.getMaxConsumedResponseSize();
   }
 
   @Override
@@ -46,42 +63,72 @@ public class HibpHttpClient implements BreachedPasswordLookup {
             .setSocketTimeout(5000)
             .build();
 
-    SimpleHttpResponse response =
-        SimpleHttp.create(session)
-            .withRequestConfig(requestConfig)
-            .doGet(BASE_URL + sha1Hash.substring(0, 5))
-            .header("Accept", "*/*")
-            .header("Add-Padding", "true")
-            .asResponse();
-    int statusCode = response.getStatus();
+    HttpGet request = new HttpGet(BASE_URL + sha1Hash.substring(0, 5));
+    request.setHeader("Accept", "*/*");
+    request.setHeader("Add-Padding", "true");
+    request.setConfig(requestConfig);
+
+    HttpResponse response = httpClient.execute(request);
+
+    StatusLine statusLine = response.getStatusLine();
+    if (statusLine == null) {
+      throw new ClientProtocolException("HIBP response had no status line");
+    }
+
+    int statusCode = statusLine.getStatusCode();
     if (statusCode != HttpStatus.SC_OK) {
       String reasonPhrase = EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, null);
       throw new HttpResponseException(
           statusCode, reasonPhrase == null ? "Unknown Status Code" : reasonPhrase);
     }
 
-    Map<String, Integer> breaches = parseResponseBody(response.asString());
-    return breaches.getOrDefault(sha1Hash.substring(5), 0);
+    HttpEntity entity = response.getEntity();
+    if (entity == null) {
+      // getEntity() may contractually be null, but a 200 GET should carry a body, so null is
+      // anomalous, not "not breached" - throw so the provider's fail-open/closed policy decides.
+      throw new ClientProtocolException("HIBP response had no body");
+    }
+
+    Charset charset = resolveCharset(entity);
+
+    try (InputStream inputStream = entity.getContent()) {
+      SafeInputStream safeInputStream = new SafeInputStream(inputStream, maxConsumedResponseSize);
+      return pwnedCount(new InputStreamReader(safeInputStream, charset), sha1Hash.substring(5));
+    }
   }
 
-  static Map<String, Integer> parseResponseBody(String body) {
-    return body.lines()
-        .map(
-            (line) -> {
-              try {
-                String[] vals = line.split(":", 2);
-                return vals.length == 2
-                    ? Optional.of(new PwnedPasswordEntry(vals[0], Integer.parseInt(vals[1])))
-                    : Optional.<PwnedPasswordEntry>empty();
-              } catch (NumberFormatException e) {
-                return Optional.<PwnedPasswordEntry>empty();
-              }
-            })
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .filter((entry) -> entry.count() > 0)
-        .collect(Collectors.toMap(PwnedPasswordEntry::hash, PwnedPasswordEntry::count));
+  private static Charset resolveCharset(HttpEntity entity) {
+    // Body is ASCII hex; a malformed/unsupported Content-Type falls back to UTF-8, never fails.
+    try {
+      Charset charset = ContentType.getOrDefault(entity).getCharset();
+      return charset != null ? charset : StandardCharsets.UTF_8;
+    } catch (ParseException | UnsupportedCharsetException e) {
+      return StandardCharsets.UTF_8;
+    }
   }
 
-  private record PwnedPasswordEntry(String hash, int count) {}
+  static int pwnedCount(Reader response, String hashSuffix) throws IOException {
+    try (BufferedReader reader = new BufferedReader(response)) {
+      String prefix = hashSuffix + ":";
+      OptionalInt breachCount =
+          reader
+              .lines()
+              .filter(line -> line.startsWith(prefix))
+              .map(HibpHttpClient::parseCount)
+              .flatMapToInt(OptionalInt::stream)
+              .findFirst();
+
+      return breachCount.orElse(0);
+    } catch (UncheckedIOException e) {
+      throw e.getCause();
+    }
+  }
+
+  private static OptionalInt parseCount(String line) {
+    try {
+      return OptionalInt.of(Integer.parseInt(line.substring(36)));
+    } catch (NumberFormatException e) {
+      return OptionalInt.empty();
+    }
+  }
 }
