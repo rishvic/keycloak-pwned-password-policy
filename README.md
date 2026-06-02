@@ -116,8 +116,25 @@ table below).
 
 ## Custom error messages (i18n)
 
-Override these message keys in your Keycloak theme's
-`messages_<locale>.properties`:
+The plugin ships English defaults for all of its message keys, bundled in the
+JAR via Keycloak's
+[theme resources](https://www.keycloak.org/docs/latest/server_development/#messages)
+mechanism (`theme-resources/messages/messages_en.properties`). These are merged
+into every theme's message bundle at startup, so the policy renders
+human-readable errors out of the box - no theme editing required. Locales
+without a bundled translation fall back to the English default.
+
+The shipped defaults are:
+
+```properties
+invalidPasswordPwnedPasswordBreachedMessage=This password has appeared in a known data breach. Please choose a different one.
+invalidPasswordPwnedPasswordLookupUnavailableMessage=The breach database is currently unavailable; this password could not be checked. Please try again later.
+invalidPasswordPwnedNoSuchAlgorithmMessage=Password could not be checked against the breach database. Contact your administrator.
+```
+
+To override any of them, define the same key in your own Keycloak theme's
+`messages_<locale>.properties`. A theme-level entry takes precedence over the
+plugin's bundled default.
 
 | Key                                                    | When it fires                                                  | Format args       |
 | ------------------------------------------------------ | -------------------------------------------------------------- | ----------------- |
@@ -125,13 +142,9 @@ Override these message keys in your Keycloak theme's
 | `invalidPasswordPwnedPasswordLookupUnavailableMessage` | HIBP API unreachable AND `failOpen=false`. Password rejected.  | none              |
 | `invalidPasswordPwnedNoSuchAlgorithmMessage`           | JVM does not provide SHA-1 (effectively never on a stock JDK). | none              |
 
-Example English defaults you might supply:
-
-```properties
-invalidPasswordPwnedPasswordBreachedMessage=This password has appeared in {0} or more known data breaches. Please choose a different one.
-invalidPasswordPwnedPasswordLookupUnavailableMessage=The breach database is currently unavailable; this password could not be checked. Please try again later.
-invalidPasswordPwnedNoSuchAlgorithmMessage=Password could not be checked against the breach database. Contact your administrator.
-```
+The bundled default for `invalidPasswordPwnedPasswordBreachedMessage` does not
+use `{0}`, but the threshold is still passed as a format argument, so an
+override may reference it.
 
 ## Privacy & security notes
 

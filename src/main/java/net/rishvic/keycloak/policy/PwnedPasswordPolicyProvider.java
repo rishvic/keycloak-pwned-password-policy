@@ -32,10 +32,9 @@ import org.keycloak.policy.PolicyError;
 public class PwnedPasswordPolicyProvider implements PasswordPolicyProvider {
 
   private static final Logger logger = Logger.getLogger(PwnedPasswordPolicyProvider.class);
-  private static final String ERROR_MESSAGE = "invalidPasswordPwnedPasswordBreachedMessage";
-  private static final String ERROR_MESSAGE_NO_SHA1_ALGO =
-      "invalidPasswordPwnedNoSuchAlgorithmMessage";
-  private static final String ERROR_MESSAGE_LOOKUP_UNAVAILABLE =
+  static final String ERROR_MESSAGE = "invalidPasswordPwnedPasswordBreachedMessage";
+  static final String ERROR_MESSAGE_NO_SHA1_ALGO = "invalidPasswordPwnedNoSuchAlgorithmMessage";
+  static final String ERROR_MESSAGE_LOOKUP_UNAVAILABLE =
       "invalidPasswordPwnedPasswordLookupUnavailableMessage";
 
   private final IntSupplier thresholdSupplier;
