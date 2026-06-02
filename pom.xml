@@ -4,7 +4,7 @@
 
   <groupId>net.rishvic.keycloak</groupId>
   <artifactId>keycloak-pwned-password-policy</artifactId>
-  <version>1.2.0</version>
+  <version>1.2.1-SNAPSHOT</version>
 
   <name>Keycloak: Have I Been Pwned Password Policy Extension</name>
   <description>Have I Been Pwned password policy SPI implementation for Keycloak</description>
@@ -30,7 +30,7 @@
     <connection>scm:git:git://codeberg.org/rishvic/keycloak-pwned-password-policy.git</connection>
     <developerConnection>scm:git:ssh://git@codeberg.org/rishvic/keycloak-pwned-password-policy.git</developerConnection>
     <url>https://codeberg.org/rishvic/keycloak-pwned-password-policy/src/branch/main</url>
-    <tag>v1.2.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
