@@ -16,6 +16,7 @@
 
 package net.rishvic.keycloak.policy;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.function.IntSupplier;
 import org.keycloak.Config;
@@ -116,11 +117,11 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
         : config.getBoolean(FAIL_OPEN_PROPERTY, DEFAULT_FAIL_OPEN);
   }
 
-  private long getLookupTimeout() {
+  private Duration getLookupTimeout() {
     long configured =
         config == null
             ? DEFAULT_LOOKUP_TIMEOUT
             : config.getLong(LOOKUP_TIMEOUT_PROPERTY, DEFAULT_LOOKUP_TIMEOUT);
-    return configured > 0 ? configured : DEFAULT_LOOKUP_TIMEOUT;
+    return Duration.ofMillis(configured > 0 ? configured : DEFAULT_LOOKUP_TIMEOUT);
   }
 }

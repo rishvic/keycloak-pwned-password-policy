@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.time.Duration;
 import java.util.OptionalInt;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -53,32 +54,47 @@ public class HibpHttpClient implements BreachedPasswordLookup {
 
   private static final String BASE_URL = "https://api.pwnedpasswords.com/range/";
   private final HttpClient httpClient;
-  private final long maxConsumedResponseSize;
   private final ExecutorService executor;
-  private final long lookupTimeoutMillis;
+  private final String baseUrl;
+  private final long maxConsumedResponseSize;
+  private final Duration lookupTimeout;
 
-  public HibpHttpClient(KeycloakSession session, long lookupTimeoutMillis) {
-    HttpClientProvider provider = session.getProvider(HttpClientProvider.class);
-    this.httpClient = provider.getHttpClient();
-    this.maxConsumedResponseSize = provider.getMaxConsumedResponseSize();
-    this.executor = session.getProvider(ExecutorsProvider.class).getExecutor("hibp-lookup");
-    this.lookupTimeoutMillis = lookupTimeoutMillis;
+  public HibpHttpClient(KeycloakSession session, Duration lookupTimeout) {
+    this(
+        session.getProvider(HttpClientProvider.class).getHttpClient(),
+        session.getProvider(ExecutorsProvider.class).getExecutor("hibp-lookup"),
+        BASE_URL,
+        session.getProvider(HttpClientProvider.class).getMaxConsumedResponseSize(),
+        lookupTimeout);
+  }
+
+  HibpHttpClient(
+      HttpClient httpClient,
+      ExecutorService executor,
+      String baseUrl,
+      long maxConsumedResponseSize,
+      Duration lookupTimeout) {
+    this.httpClient = httpClient;
+    this.executor = executor;
+    this.baseUrl = baseUrl;
+    this.maxConsumedResponseSize = maxConsumedResponseSize;
+    this.lookupTimeout = lookupTimeout;
   }
 
   @Override
   public int getBreachCount(String sha1Hash) throws IOException {
-    HttpGet request = new HttpGet(BASE_URL + sha1Hash.substring(0, 5));
+    HttpGet request = new HttpGet(baseUrl + sha1Hash.substring(0, 5));
     request.setHeader("Accept", "*/*");
     request.setHeader("Add-Padding", "true");
 
     Future<Integer> future = executor.submit(() -> executeAndCount(request, sha1Hash.substring(5)));
     try {
-      return future.get(lookupTimeoutMillis, TimeUnit.MILLISECONDS);
+      return future.get(lookupTimeout.toMillis(), TimeUnit.MILLISECONDS);
     } catch (TimeoutException e) {
       request.abort();
       future.cancel(true);
       throw new InterruptedIOException(
-          "HIBP lookup exceeded its budget of " + lookupTimeoutMillis + " ms");
+          "HIBP lookup exceeded its budget of " + lookupTimeout.toMillis() + " ms");
     } catch (InterruptedException e) {
       request.abort();
       future.cancel(true);
