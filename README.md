@@ -90,13 +90,13 @@ Only one instance of this policy is supported per realm.
 
 ### Server-wide SPI configuration
 
-Both settings below are configured at the SPI level (server-wide, not per
-realm).
+The settings below are configured at the SPI level (server-wide, not per realm).
 
-| Property              | Type    | Default | Effect                                                                                                                                                 |
-| --------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `failOpen`            | boolean | `true`  | If `true`, allow the password when the HIBP lookup fails. If `false`, reject it.                                                                       |
-| `lookupTimeoutMillis` | integer | `3000`  | Total time budget for a single HIBP lookup. On expiry the in-flight request is aborted and the lookup is treated as a failure (handled by `failOpen`). |
+| Property              | Type    | Default                          | Effect                                                                                                                                                                                          |
+| --------------------- | ------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hibpBaseUrl`         | URL     | `https://api.pwnedpasswords.com` | Base URL of the HIBP Pwned Passwords range API; the policy appends `/range/{prefix}`. Override only to target a HIBP-compatible mirror or proxy. Must be a valid absolute URL or startup fails. |
+| `failOpen`            | boolean | `true`                           | If `true`, allow the password when the HIBP lookup fails. If `false`, reject it.                                                                                                                |
+| `lookupTimeoutMillis` | integer | `3000`                           | Total time budget for a single HIBP lookup. On expiry the in-flight request is aborted and the lookup is treated as a failure (handled by `failOpen`).                                          |
 
 Set them via the Keycloak CLI:
 

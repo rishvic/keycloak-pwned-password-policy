@@ -16,6 +16,8 @@
 
 package net.rishvic.keycloak.policy;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.IntSupplier;
@@ -31,6 +33,9 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
 
   public static final String ID = "pwnedPassword";
 
+  public static final String BASE_URL_PROPERTY = "hibpBaseUrl";
+  public static final String DEFAULT_BASE_URL = "https://api.pwnedpasswords.com";
+
   public static final String FAIL_OPEN_PROPERTY = "failOpen";
   public static final boolean DEFAULT_FAIL_OPEN = true;
 
@@ -38,6 +43,7 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
   public static final long DEFAULT_LOOKUP_TIMEOUT = 3000L;
 
   private volatile Config.Scope config;
+  private volatile String baseUrl = DEFAULT_BASE_URL;
 
   @Override
   public String getId() {
@@ -49,12 +55,15 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
     IntSupplier thresholdSupplier =
         () -> session.getContext().getRealm().getPasswordPolicy().getPolicyConfig(ID);
     return new PwnedPasswordPolicyProvider(
-        thresholdSupplier, this::getFailOpen, new HibpHttpClient(session, getLookupTimeout()));
+        thresholdSupplier,
+        this::getFailOpen,
+        new HibpHttpClient(session, baseUrl, getLookupTimeout()));
   }
 
   @Override
   public void init(Config.Scope config) {
     this.config = config;
+    this.baseUrl = resolveBaseUrl(config);
   }
 
   @Override
@@ -89,6 +98,17 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
 
     builder
         .property()
+        .name(BASE_URL_PROPERTY)
+        .type(ProviderConfigProperty.URL_TYPE)
+        .helpText(
+            "Base URL of the Have I Been Pwned Pwned Passwords range API; the policy appends"
+                + " /range/{prefix}. Override only to target a HIBP-compatible mirror or proxy."
+                + " Must be a valid absolute URL or the server fails to start.")
+        .defaultValue(DEFAULT_BASE_URL)
+        .add();
+
+    builder
+        .property()
         .name(FAIL_OPEN_PROPERTY)
         .type(ProviderConfigProperty.BOOLEAN_TYPE)
         .helpText(
@@ -109,6 +129,29 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
         .add();
 
     return builder.build();
+  }
+
+  private static String resolveBaseUrl(Config.Scope config) {
+    String configured =
+        config == null ? DEFAULT_BASE_URL : config.get(BASE_URL_PROPERTY, DEFAULT_BASE_URL);
+    // Normalize trailing slashes: we own the "/range/{prefix}" path joining ourselves.
+    String normalized = configured.replaceAll("/+$", "");
+    URI uri;
+    try {
+      uri = new URI(normalized);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(
+          "Invalid '" + BASE_URL_PROPERTY + "' value '" + configured + "': " + e.getMessage(), e);
+    }
+    if (!uri.isAbsolute()) {
+      throw new RuntimeException(
+          "Invalid '"
+              + BASE_URL_PROPERTY
+              + "' value '"
+              + configured
+              + "': must be an absolute URL");
+    }
+    return normalized;
   }
 
   private boolean getFailOpen() {

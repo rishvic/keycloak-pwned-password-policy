@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.InterruptedIOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -52,18 +53,17 @@ import org.keycloak.models.KeycloakSession;
 
 public class HibpHttpClient implements BreachedPasswordLookup {
 
-  private static final String BASE_URL = "https://api.pwnedpasswords.com/range/";
   private final HttpClient httpClient;
   private final ExecutorService executor;
   private final String baseUrl;
   private final long maxConsumedResponseSize;
   private final Duration lookupTimeout;
 
-  public HibpHttpClient(KeycloakSession session, Duration lookupTimeout) {
+  public HibpHttpClient(KeycloakSession session, String baseUrl, Duration lookupTimeout) {
     this(
         session.getProvider(HttpClientProvider.class).getHttpClient(),
         session.getProvider(ExecutorsProvider.class).getExecutor("hibp-lookup"),
-        BASE_URL,
+        baseUrl,
         session.getProvider(HttpClientProvider.class).getMaxConsumedResponseSize(),
         lookupTimeout);
   }
@@ -83,7 +83,8 @@ public class HibpHttpClient implements BreachedPasswordLookup {
 
   @Override
   public int getBreachCount(String sha1Hash) throws IOException {
-    HttpGet request = new HttpGet(baseUrl + sha1Hash.substring(0, 5));
+    // baseUrl is validated at factory init time and the prefix is hex, so this cannot throw.
+    HttpGet request = new HttpGet(URI.create(baseUrl + "/range/" + sha1Hash.substring(0, 5)));
     request.setHeader("Accept", "*/*");
     request.setHeader("Add-Padding", "true");
 
