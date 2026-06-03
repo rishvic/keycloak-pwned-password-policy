@@ -6,7 +6,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        KEYCLOAK_VERSION: "26.6.1"
+        KEYCLOAK_VERSION: "26.6.2"
     restart: unless-stopped
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin

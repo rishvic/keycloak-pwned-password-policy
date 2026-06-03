@@ -43,7 +43,7 @@ seen in a breach).
 
 ## Requirements
 
-- Keycloak **26.6.1** or compatible
+- Keycloak **26.6.2** or compatible
 - JDK **21** to build (the deployed JAR runs on Keycloak's bundled JDK)
 - Outbound HTTPS access from Keycloak to `api.pwnedpasswords.com`
 

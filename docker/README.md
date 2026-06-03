@@ -62,14 +62,14 @@ docker compose -f docker/compose.yaml down
 
 | Arg                | Default                     | Purpose                                          |
 | ------------------ | --------------------------- | ------------------------------------------------ |
-| `KEYCLOAK_VERSION` | `26.6.1`                    | Keycloak base image tag and `-Dkeycloak.version` |
+| `KEYCLOAK_VERSION` | `26.6.2`                    | Keycloak base image tag and `-Dkeycloak.version` |
 | `MAVEN_IMAGE`      | `3.9.15-eclipse-temurin-21` | Builder stage base (`maven:${MAVEN_IMAGE}`)      |
 
 Override at build time, for example to test against a newer Keycloak release:
 
 ```sh
 docker build -f docker/Dockerfile \
-  --build-arg KEYCLOAK_VERSION=26.6.1 \
+  --build-arg KEYCLOAK_VERSION=26.6.2 \
   -t keycloak-hibp:pinned .
 ```
 
