@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Rishvic Pushpakaran
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Docker samples
 
 Reference Docker assets that build the SPI from source and produce a Keycloak

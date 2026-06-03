@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Rishvic Pushpakaran
+#
+# SPDX-License-Identifier: Apache-2.0
+
 ARG KEYCLOAK_VERSION=26.6.2
 ARG MAVEN_IMAGE=3.9.15-eclipse-temurin-21
 

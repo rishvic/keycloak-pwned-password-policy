@@ -1,0 +1,6 @@
+version = 1
+
+[[annotations]]
+path = "src/main/resources/META-INF/NOTICE"
+SPDX-FileCopyrightText = "2026 Rishvic Pushpakaran"
+SPDX-License-Identifier = "Apache-2.0"

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Rishvic Pushpakaran
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Keycloak: Have I Been Pwned Password Policy
 
 > Reject passwords found in the [Have I Been Pwned](https://haveibeenpwned.com/)
@@ -217,8 +223,17 @@ src/test/java/...                          # JUnit 5 + AssertJ unit tests
 ## Contributing
 
 Issues and pull requests are welcome on Codeberg. Run `./mvnw test` before
-submitting. By contributing you agree to license your work under Apache License
-2.0; see `LICENSE` and `NOTICE`.
+submitting.
+
+This project is [REUSE](https://reuse.software/)-compliant: every file declares
+its copyright and license, either through `SPDX-FileCopyrightText` and
+`SPDX-License-Identifier` header comments or, for files that cannot carry them
+(such as `NOTICE`), an entry in `REUSE.toml`. Give any new file the standard
+header and run `reuse lint` before opening a pull request to confirm the tree
+still reports as compliant.
+
+By contributing you agree to license your work under Apache License 2.0; see
+`LICENSE` and `NOTICE`.
 
 ## License
 
