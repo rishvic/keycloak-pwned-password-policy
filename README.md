@@ -92,11 +92,12 @@ Only one instance of this policy is supported per realm.
 
 The settings below are configured at the SPI level (server-wide, not per realm).
 
-| Property              | Type    | Default                          | Effect                                                                                                                                                                                          |
-| --------------------- | ------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `hibpBaseUrl`         | URL     | `https://api.pwnedpasswords.com` | Base URL of the HIBP Pwned Passwords range API; the policy appends `/range/{prefix}`. Override only to target a HIBP-compatible mirror or proxy. Must be a valid absolute URL or startup fails. |
-| `failOpen`            | boolean | `true`                           | If `true`, allow the password when the HIBP lookup fails. If `false`, reject it.                                                                                                                |
-| `lookupTimeoutMillis` | integer | `3000`                           | Total time budget for a single HIBP lookup. On expiry the in-flight request is aborted and the lookup is treated as a failure (handled by `failOpen`).                                          |
+| Property              | Type    | Default                          | Effect                                                                                                                                                                                                                                                                                                                                              |
+| --------------------- | ------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hibpBaseUrl`         | URL     | `https://api.pwnedpasswords.com` | Base URL of the HIBP Pwned Passwords range API; the policy appends `/range/{prefix}`. Override only to target a HIBP-compatible mirror or proxy. Must be a valid absolute URL or startup fails.                                                                                                                                                     |
+| `failOpen`            | boolean | `true`                           | If `true`, allow the password when the HIBP lookup fails. If `false`, reject it.                                                                                                                                                                                                                                                                    |
+| `lookupTimeoutMillis` | integer | `3000`                           | Total time budget for a single HIBP lookup. On expiry the in-flight request is aborted and the lookup is treated as a failure (handled by `failOpen`).                                                                                                                                                                                              |
+| `userAgent`           | string  | plugin name + version            | `User-Agent` header sent on each HIBP lookup. Defaults to `keycloak-pwned-password-policy/<version> (+<project URL>)`, identifying the plugin and its version. The default is identical for every install of a given version, so it carries no per-deployment information. Set a custom value to override; a blank value falls back to the default. |
 
 Set them via the Keycloak CLI:
 
@@ -173,6 +174,9 @@ override may reference it.
 - The HIBP server cannot determine which exact password was checked.
 - The `Add-Padding: true` header mitigates response-size correlation attacks
   against TLS metadata observers.
+- The `User-Agent` identifies only the plugin and its version, the same for
+  every install, so it adds no per-deployment fingerprint (override it with the
+  `userAgent` SPI property if your environment requires a different value).
 - Logs include only the upstream error message, never the password, the full
   hash, or the prefix.
 

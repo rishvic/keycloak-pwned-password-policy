@@ -58,14 +58,17 @@ public class HibpHttpClient implements BreachedPasswordLookup {
   private final String baseUrl;
   private final long maxConsumedResponseSize;
   private final Duration lookupTimeout;
+  private final String userAgent;
 
-  public HibpHttpClient(KeycloakSession session, String baseUrl, Duration lookupTimeout) {
+  public HibpHttpClient(
+      KeycloakSession session, String baseUrl, Duration lookupTimeout, String userAgent) {
     this(
         session.getProvider(HttpClientProvider.class).getHttpClient(),
         session.getProvider(ExecutorsProvider.class).getExecutor("hibp-lookup"),
         baseUrl,
         session.getProvider(HttpClientProvider.class).getMaxConsumedResponseSize(),
-        lookupTimeout);
+        lookupTimeout,
+        userAgent);
   }
 
   HibpHttpClient(
@@ -73,18 +76,21 @@ public class HibpHttpClient implements BreachedPasswordLookup {
       ExecutorService executor,
       String baseUrl,
       long maxConsumedResponseSize,
-      Duration lookupTimeout) {
+      Duration lookupTimeout,
+      String userAgent) {
     this.httpClient = httpClient;
     this.executor = executor;
     this.baseUrl = baseUrl;
     this.maxConsumedResponseSize = maxConsumedResponseSize;
     this.lookupTimeout = lookupTimeout;
+    this.userAgent = userAgent;
   }
 
   @Override
   public int getBreachCount(String sha1Hash) throws IOException {
     // baseUrl is validated at factory init time and the prefix is hex, so this cannot throw.
     HttpGet request = new HttpGet(URI.create(baseUrl + "/range/" + sha1Hash.substring(0, 5)));
+    request.setHeader("User-Agent", userAgent);
     request.setHeader("Accept", "*/*");
     request.setHeader("Add-Padding", "true");
 

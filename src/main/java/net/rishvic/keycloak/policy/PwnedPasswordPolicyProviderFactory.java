@@ -20,6 +20,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.IntSupplier;
 import org.keycloak.Config;
 import org.keycloak.models.KeycloakSession;
@@ -42,6 +43,9 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
   public static final String LOOKUP_TIMEOUT_PROPERTY = "lookupTimeoutMillis";
   public static final long DEFAULT_LOOKUP_TIMEOUT = 3000L;
 
+  public static final String USER_AGENT_PROPERTY = "userAgent";
+  public static final String DEFAULT_USER_AGENT = getDefaultUserAgent();
+
   private volatile Config.Scope config;
   private volatile String baseUrl = DEFAULT_BASE_URL;
 
@@ -57,7 +61,7 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
     return new PwnedPasswordPolicyProvider(
         thresholdSupplier,
         this::getFailOpen,
-        new HibpHttpClient(session, baseUrl, getLookupTimeout()));
+        new HibpHttpClient(session, baseUrl, getLookupTimeout(), getUserAgent()));
   }
 
   @Override
@@ -128,6 +132,17 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
         .defaultValue(DEFAULT_LOOKUP_TIMEOUT)
         .add();
 
+    builder
+        .property()
+        .name(USER_AGENT_PROPERTY)
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .helpText(
+            "User-Agent header sent with each HIBP lookup; by convention this identifies the"
+                + " application calling the API. Defaults to this plugin's name and version."
+                + " Override to send a custom value; a blank value falls back to the default.")
+        .defaultValue(DEFAULT_USER_AGENT)
+        .add();
+
     return builder.build();
   }
 
@@ -166,5 +181,21 @@ public class PwnedPasswordPolicyProviderFactory implements PasswordPolicyProvide
             ? DEFAULT_LOOKUP_TIMEOUT
             : config.getLong(LOOKUP_TIMEOUT_PROPERTY, DEFAULT_LOOKUP_TIMEOUT);
     return Duration.ofMillis(configured > 0 ? configured : DEFAULT_LOOKUP_TIMEOUT);
+  }
+
+  private String getUserAgent() {
+    String userAgent =
+        config == null ? DEFAULT_USER_AGENT : config.get(USER_AGENT_PROPERTY, DEFAULT_USER_AGENT);
+    return userAgent.isBlank() ? DEFAULT_USER_AGENT : userAgent;
+  }
+
+  private static String getDefaultUserAgent() {
+    String version =
+        Optional.ofNullable(
+                PwnedPasswordPolicyProviderFactory.class.getPackage().getImplementationVersion())
+            .orElse("dev");
+    return "keycloak-pwned-password-policy/"
+        + version
+        + " (+https://codeberg.org/rishvic/keycloak-pwned-password-policy)";
   }
 }
